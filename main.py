@@ -2,6 +2,7 @@ import json
 from time import sleep
 from random import randrange
 from copy import deepcopy
+from typing import Union
 from pyco import cursor, color, terminal
 from pyco.utils import getch, kbhit
 from pyco.constants import ESC
@@ -9,12 +10,21 @@ from pyco.color import RESET
 
 
 class Field:
-    def __init__(self, width: int, height: int, cells: list[list[bool]] = [], chars: dict = {True: '*', False: ' '}, wrap: bool = True):
+    def __init__(self, width: int, height: int, cells: Union[list[list[bool]], list[tuple[int, int]]] = None, chars: dict = {True: '##', False: '  '}, wrap: bool = True):
         self.width = width
         self.height = height
-        self.cells = cells if cells else self.random_field()
         self.chars = chars
         self.wrap = wrap
+        if cells and isinstance(cells, list):
+            if isinstance(cells[0], list):
+                if isinstance(cells[0][0], bool):
+                    self.cells = cells
+            elif isinstance(cells[0], tuple):
+                if isinstance(cells[0][0], int):
+                    self.cells = [[False for y in range(self.height)] for x in range(self.width)]
+                    self.set_many(cells)
+        else:
+            self.cells = self.random_field()
 
     def update(self):
         cells = deepcopy(self.cells)
@@ -55,9 +65,9 @@ class Field:
         y %= self.height
         self.cells[x][y] = state
 
-    def set_many(self, cells: dict):
-        for coord, state in cells.items():
-            self.set(coord[0], coord[1], state)
+    def set_many(self, cells: list[tuple[int, int]]):
+        for coord in cells:
+            self.set(coord[0], coord[1], True)
 
     def clear(self):
         cells = [[False for y in range(self.height)] for x in range(self.width)]
@@ -148,10 +158,8 @@ if __name__ == '__main__':
         False: '  '
     }
     terminal_size = terminal.get_size()
-    field = Field(terminal_size.columns // 2, terminal_size.lines, chars=chars)
-    # field.clear()
-    # import lexicon
-    # field.set_many(lexicon.glider)
+    import lexicon
+    field = Field(terminal_size.columns // 2, terminal_size.lines, chars=chars, cells=lexicon.acorn)
     cursor.hide()
     while True:
         key = get_key()
