@@ -1,37 +1,38 @@
-import json
-from time import sleep
+from enum import Enum
 from random import randrange
-from copy import deepcopy
-from typing import Union
-from pyco import cursor, color, terminal
+from typing import Optional
+
+from pyco import color, cursor, terminal
 from pyco.utils import getch, kbhit
-from pyco.constants import ESC
-from pyco.color import RESET
+
+
+class Event(Enum):
+    EXIT = '\x1b'
+    PAUSE = ' '
+    RESET = 'r'
 
 
 class Field:
-    def __init__(self, width: int, height: int, cells: Union[list[list[bool]], list[tuple[int, int]]] = None, chars: dict = {True: '##', False: '  '}, wrap: bool = True):
-        self.width = width
-        self.height = height
-        self.chars = chars
-        self.wrap = wrap
-        if cells and isinstance(cells, list):
-            if isinstance(cells[0], list):
-                if isinstance(cells[0][0], bool):
-                    self.cells = cells
-            elif isinstance(cells[0], tuple):
-                if isinstance(cells[0][0], int):
-                    self.cells = [[False for y in range(self.height)] for x in range(self.width)]
-                    self.set_many(cells)
-        else:
-            self.cells = self.random_field()
+    def __init__(self):
+        self.cells = set()
+        self.text = ''
+        self.reset()
 
-    def update(self):
-        cells = deepcopy(self.cells)
-        for x in range(self.width):
-            for y in range(self.height):
-                cells[x][y] = self.next(x, y)
-        self.cells = cells
+    @property
+    def width(self) -> int:
+        return terminal.get_size().columns
+
+    @property
+    def height(self) -> int:
+        return terminal.get_size().lines * 2
+
+    def reset(self):
+        self.cells = set()
+        for _ in range(self.width * self.height // randrange(6, 11)):
+            self.cells.add((randrange(self.width), randrange(self.height)))
+
+    def alive(self, x: int, y: int) -> bool:
+        return (x, y) in self.cells
 
     def next(self, x: int, y: int) -> bool:
         alive = 0
@@ -41,133 +42,83 @@ class Field:
             while j <= 1:
                 a = x + i
                 b = y + j
-                if not self.wrap:
-                    if a < 0 or a >= self.width or b < 0 or b >= self.height:
-                        j += 1
-                        continue
-                if (i != 0 or j != 0) and self.alive(a, b):
+                if self.alive(a, b) and not (i == 0 and j == 0):
                     alive += 1
                 j += 1
             i += 1
-        return (alive == 2 and self.alive(x, y)) or alive == 3
+        return alive == 3 or (alive == 2 and self.alive(x, y))
 
-    def alive(self, x: int, y: int) -> bool:
-        x += self.width
-        x %= self.width
-        y += self.height
-        y %= self.height
-        return self.cells[x][y]
-
-    def set(self, x: int, y: int, state: bool):
-        x += self.width
-        x %= self.width
-        y += self.height
-        y %= self.height
-        self.cells[x][y] = state
-
-    def set_many(self, cells: list[tuple[int, int]]):
-        for coord in cells:
-            self.set(coord[0], coord[1], True)
-
-    def clear(self):
-        cells = [[False for y in range(self.height)] for x in range(self.width)]
-        self.cells = cells
-
-    def random_field(self) -> list[list[bool]]:
-        cells = [[False for y in range(self.height)] for x in range(self.width)]
-        for i in range(self.width * self.height // randrange(6, 11)):
-            cells[randrange(self.width)][randrange(self.height)] = True
-        return cells
-
-    def __str__(self):
-        strings = []
-        for y in range(self.height):
-            string = ''
+    def update(self):
+        rows = []
+        for y in range(0, self.height, 2):
+            row = ''
             for x in range(self.width):
-                string += self.chars[self.cells[x][y]]
-            strings.append(string)
-        return '\n'.join(strings)
+                if self.next(x, y):
+                    self.cells.add((x, y))
+                else:
+                    self.cells.discard((x, y))
+                if y + 1 < self.height and self.next(x, y + 1):
+                    self.cells.add((x, y + 1))
+                else:
+                    self.cells.discard((x, y + 1))
+                row += (
+                    (str(color.Fore.BRIGHT_YELLOW) if self.alive(x, y) else str(color.Fore.BLACK))
+                    + (
+                        str(color.Back.BRIGHT_YELLOW)
+                        if y + 1 < self.height and self.alive(x, y + 1)
+                        else str(color.Back.BLACK)
+                    )
+                    + '▀'
+                    + str(color.RESET)
+                )
+            rows.append(row)
+        self.text = '\n'.join(rows)
 
 
 class Game:
-    def __init__(self, config_path: str = 'config.json'):
-        with open(config_path, 'r') as config_file:
-            self.config = json.load(config_file)
-        self.keybinds = self.config['keybinds']
-        self.running = True
+    def __init__(self):
+        self.field = Field()
+        terminal.set_window_title("Conway's Game of Life")
+        terminal.clear_screen()
+        cursor.hide()
 
-    def play(self):
-        self.running = True
-        while self.running:
-            self.field = Field(self, self.config)
-            while self.running:
-                key = self.get_key()
-                if key is not None:
-                    key = key.upper()
-                    key = self.keybinds.get(key, key)
-                    if key in self.keybinds.values():
-                        self.field.snake.change_direction(key)
-                    elif key == ESC:
-                        self.exit()
-                    elif key == ' ':
-                        getch()
-                self.field.update()
-
-    def end(self, *messages: str):
-        # terminal.bell()
-        for i, message in enumerate(messages):
-            self.add_string(((self.field.real_size.x - len(message)) // 2, ((self.field.real_size.y - len(messages)) // 2) + i), message + RESET)
-        key = getch().upper()
-        if key == '\x1b':
-            self.exit()
-        else:
-            self.play()
+    def reset(self):
+        self.field.reset()
 
     def exit(self):
         terminal.clear_screen()
-        self.running = False
+        cursor.set_position(0, 0)
+        cursor.show()
+        raise SystemExit
 
-    def add_string(self, pos: tuple[int], string: str):
-        cursor.set_position(*pos)
-        print(string, end='')
-
-    def get_key(self) -> str:
-        if kbhit():
-            key = getch()
-            if key in ['\000', '\x00', '\xe0']:
-                key = getch()
-            return key
-
-
-# if __name__ == '__main__':
-#     game = Game()
-#     game.play()
-
-
-def get_key() -> str:
-    if kbhit():
-        key = getch()
-        if key in ['\000', '\x00', '\xe0']:
+    def get_event(self) -> Optional[Event]:
+        key = ''
+        while kbhit():
             key += getch()
-        return key
+        if key:
+            key = key.lower()
+            try:
+                return Event(key)
+            except ValueError:
+                return None
+
+    def play(self):
+        try:
+            while True:
+                event = self.get_event()
+                if event is Event.EXIT:
+                    self.exit()
+                elif event is Event.PAUSE:
+                    getch()
+                elif event is Event.RESET:
+                    self.reset()
+                self.field.update()
+                cursor.set_position(0, 0)
+                for line in self.field.text.splitlines(keepends=True):
+                    print(line, end='', flush=True)
+        except KeyboardInterrupt:
+            self.exit()
 
 
 if __name__ == '__main__':
-    chars = {
-        True: color.Fore.BRIGHT_YELLOW + '██',
-        False: '  '
-    }
-    terminal_size = terminal.get_size()
-    import lexicon
-    field = Field(terminal_size.columns // 2, terminal_size.lines, chars=chars, cells=lexicon.acorn)
-    cursor.hide()
-    while True:
-        key = get_key()
-        if key == '\x1b':
-            break
-        elif key == ' ':
-            field = Field(terminal_size.columns // 2, terminal_size.lines, chars=chars)
-        print(field, end='')
-        sleep(1 / 20)
-        field.update()
-        cursor.set_position(0, 0)
+    Game().play()
