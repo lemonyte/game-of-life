@@ -101,7 +101,7 @@ class GameOfLife:
         return "\n".join(rows) + str(color.RESET)
 
 
-class Game:
+class Program:
     def __init__(self) -> None:
         self.field = GameOfLife()
         self.starting_cells: CellGrid = {}
