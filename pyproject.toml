@@ -1,0 +1,30 @@
+[project]
+name = "game-of-life"
+version = "0.1.0"
+description = "Conway's Game of Life for the terminal"
+readme = "readme.md"
+requires-python = ">=3.10"
+dependencies = ["pyco~=1.0.0"]
+
+[project.scripts]
+game-of-life = "game_of_life.__main__:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.package-data]
+"game_of_life.patterns" = ["*"]
+
+[tool.ruff]
+src = ["src"]
+line-length = 119
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["ALL"]
+ignore = ["D1", "T20", "S311", "PLR2004"]
+
+[tool.pyright]
+venvPath = "."
+venv = ".venv"

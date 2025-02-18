@@ -1,31 +1,55 @@
 # Game of Life
 
-[Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life), in a terminal.
+[Conway's Game of Life](https://en.wikipedia.org/wiki/Conway%27s_Game_of_Life), for the terminal.
 
-## Requirements
+This project was created as a demo for the [Pyco](https://github.com/lemonyte/pyco) library.
 
-### Python File
+## Installation
 
-- [Python 3.9](https://www.python.org/downloads/) or higher
-- Packages listed in [`requirements.txt`](requirements.txt)
+With uv:
 
-### Windows Systems
+```shell
+uv tool install git+https://github.com/lemonyte/game-of-life
+```
 
-Optional executable file for Windows users. Python and the required packages are included in the executable.
+With pip:
 
-- 6 MB of free space for the executable
-- 7 MB of free space for temporary files
+```shell
+pip install git+https://github.com/lemonyte/game-of-life
+```
 
-## Controls
+Requires [Python 3.10](https://www.python.org/downloads/) or higher.
 
-|Key|Description|
-|--|--|
-|<kbd>ESC</kbd>|Exit the game.|
-|<kbd>SPACE</kbd>|Pause the game.|
-|<kbd>R</kbd>|Reset the game.|
+## Usage
 
-Resizing the terminal window will affect how fast the game runs because the number of cells will change.
-Making it smaller will cause it to run faster, but cells that are outside of the window will not be calculated until they are in view again.
+### Command line
+
+```shell
+game-of-life <pattern> [--rate <rate>]
+```
+
+When run without a pattern, one will be randomly generated.
+For a list of available patterns see the [patterns](src/game_of_life/patterns) directory.
+
+`rate` can be used to limit the refresh rate of the simulation in updates per second.
+
+Example:
+
+```shell
+game-of-life snark_loop --rate 20
+```
+
+### Controls
+
+| Key                            | Description                 |
+| ------------------------------ | --------------------------- |
+| <kbd>ESC</kbd> or <kbd>q</kbd> | Exit the program            |
+| <kbd>SPACE</kbd>               | Pause the simulation        |
+| <kbd>s</kbd>                   | Step the simulation forward |
+| <kbd>r</kbd>                   | Reset the simulation        |
+
+Resizing the terminal window will affect how fast the simulation runs, more cells equals slower simulation.
+When resizing the terminal, press <kbd>r</kbd> to adjust the simulation size automatically.
 
 ## License
 
