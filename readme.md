@@ -25,7 +25,7 @@ Requires [Python 3.10](https://www.python.org/downloads/) or higher.
 ### Command line
 
 ```shell
-game-of-life <pattern> [--rate <rate>]
+game-of-life <pattern> [--rate <int>]
 ```
 
 When run without a pattern, one will be randomly generated.
