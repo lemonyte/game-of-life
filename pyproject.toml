@@ -24,7 +24,3 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = ["D1", "T20", "S311", "PLR2004"]
-
-[tool.pyright]
-venvPath = "."
-venv = ".venv"
