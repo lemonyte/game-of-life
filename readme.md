@@ -25,18 +25,25 @@ Requires [Python 3.10](https://www.python.org/downloads/) or higher.
 ### Command line
 
 ```shell
-game-of-life <pattern> [--rate <int>]
+game-of-life [-h] [--rate RATE] [pattern]
 ```
 
-When run without a pattern, one will be randomly generated.
+You can specify a path to a pattern file in [plaintext format](https://conwaylife.com/wiki/Plaintext) or the name of a built-in pattern.
 For a list of available patterns see the [patterns](src/game_of_life/patterns) directory.
+
+When run without a pattern, one will be randomly generated.
 
 `rate` can be used to limit the refresh rate of the simulation in updates per second.
 
 Example:
 
 ```shell
+# Random pattern.
+game-of-life
+# Built-in pattern "snark_loop" at 20 updates per second.
 game-of-life snark_loop --rate 20
+# Custom pattern from file.
+game-of-life path/to/my_pattern.cells
 ```
 
 ### Controls
