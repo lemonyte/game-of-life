@@ -13,9 +13,6 @@ game-of-life = "game_of_life.__main__:main"
 requires = ["uv_build>=0.9.22"]
 build-backend = "uv_build"
 
-[tool.setuptools.package-data]
-"game_of_life.patterns" = ["*"]
-
 [tool.ruff]
 src = ["src"]
 line-length = 119
