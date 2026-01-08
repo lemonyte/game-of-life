@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import random
 import time
 from enum import Enum
@@ -15,7 +13,7 @@ Cell = tuple[int, int]
 CellGrid = dict[Cell, bool]
 
 
-def load_cells(path: Traversable, /) -> CellGrid:
+def load_cells(path: "Traversable", /) -> CellGrid:
     cells: CellGrid = {}
     for y, line in enumerate(filter(lambda line: not line.startswith("!"), path.read_text().splitlines())):
         for x, char in enumerate(line):
